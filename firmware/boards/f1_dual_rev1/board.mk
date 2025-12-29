@@ -1,6 +1,5 @@
 USE_BOOTLOADER = no
 ENABLE_TS = yes
-ENABLE_OPENBLT = yes
 
 MCU = cortex-m3
 
