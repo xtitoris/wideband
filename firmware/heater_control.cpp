@@ -66,7 +66,7 @@ HeaterState HeaterControllerBase::GetNextState(HeaterState currentState, HeaterA
         }
         else if (heaterSupplyVoltage > HEATER_SUPPLY_ON_VOLTAGE)
         {
-            // measured voltage is high enougth to auto-start heating, wait some time to stabilize
+            // measured voltage is high enough to auto-start heating, wait some time to stabilize
             heaterAllowed = m_heaterStableTimer.hasElapsedSec(HEATER_BATTERY_STAB_TIME);
         }
     }
@@ -168,8 +168,6 @@ HeaterState HeaterControllerBase::GetNextState(HeaterState currentState, HeaterA
                 // looks like heavy ramped Ipump affects sensorTemp measure
                 // and right after switch to closed loop sensorTemp drops below underhead threshold
             }
-            // reset fault
-            SetFault(ch, Fault::None);
 
             break;
         case HeaterState::Stopped:
