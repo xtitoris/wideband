@@ -3,7 +3,11 @@
 #include "status.h"
 #include "sampling.h"
 
+#include "port.h"
+
 using namespace wbo;
+
+static Configuration* configuration;
 
 static const PidConfig heaterPidConfig =
 {
@@ -23,6 +27,8 @@ HeaterControllerBase::HeaterControllerBase(int ch, int preheatTimeSec, int warmu
 
 void HeaterControllerBase::Configure(float targetTempC, float targetEsr)
 {
+    configuration = GetConfiguration();
+
     m_targetTempC = targetTempC;
     m_targetEsr = targetEsr;
 
@@ -60,14 +66,14 @@ HeaterState HeaterControllerBase::GetNextState(HeaterState currentState, HeaterA
     if (heaterAllowState == HeaterAllow::Unknown)
     {
         // measured voltage too low to auto-start heating
-        if (heaterSupplyVoltage < HEATER_SUPPLY_OFF_VOLTAGE)
+        if (heaterSupplyVoltage < configuration->heaterConfig.HeaterSupplyOffVoltage / 100.0f)
         {
             m_heaterStableTimer.reset();
         }
-        else if (heaterSupplyVoltage > HEATER_SUPPLY_ON_VOLTAGE)
+        else if (heaterSupplyVoltage > configuration->heaterConfig.HeaterSupplyOnVoltage / 100.0f)
         {
-            // measured voltage is high enough to auto-start heating, wait some time to stabilize
-            heaterAllowed = m_heaterStableTimer.hasElapsedSec(HEATER_BATTERY_STAB_TIME);
+            // measured voltage is high enougth to auto-start heating, wait some time to stabilize
+            heaterAllowed = m_heaterStableTimer.hasElapsedSec(configuration->heaterConfig.HeaterBatteryStabTime / 100.0f);
         }
     }
 

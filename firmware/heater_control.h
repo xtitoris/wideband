@@ -77,8 +77,6 @@ private:
     //    occured
     Timer m_underheatTimer;
     Timer m_overheatTimer;
-
-    static const int batteryStabTimeCounter = HEATER_BATTERY_STAB_TIME / HEATER_CONTROL_PERIOD;
 };
 
 const IHeaterController& GetHeaterController(int ch);

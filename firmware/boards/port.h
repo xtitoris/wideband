@@ -57,7 +57,7 @@ class Configuration {
 private:
     // Increment this any time the configuration format changes
     // It is stored along with the data to ensure that it has been written before
-    static constexpr uint32_t ExpectedTag = 0xDEADBE02;
+    static constexpr uint32_t ExpectedTag = 0xDEADBE03;
     uint32_t Tag = ExpectedTag;
 
 public:
@@ -107,6 +107,10 @@ public:
             egt[i].AemNetIdOffset = i;
         }
 
+        heaterConfig.HeaterSupplyOffVoltage = HEATER_SUPPLY_OFF_VOLTAGE * 100;
+        heaterConfig.HeaterSupplyOnVoltage = HEATER_SUPPLY_ON_VOLTAGE * 100;
+        heaterConfig.HeaterBatteryStabTime = HEATER_BATTERY_STAB_TIME * 100;
+
         /* Finaly */
         Tag = ExpectedTag;
     }
@@ -143,6 +147,13 @@ public:
                 uint8_t AemNetIdOffset;
                 uint8_t pad[5];
             } egt[2];
+
+            struct {
+                uint16_t HeaterSupplyOffVoltage; // volts * 100
+                uint16_t HeaterSupplyOnVoltage;  // volts * 100
+                uint16_t HeaterBatteryStabTime;  // seconds * 100
+                uint8_t pad[2];
+            } heaterConfig;
         } __attribute__((packed));
 
         // pad to 256 bytes including tag
