@@ -58,7 +58,7 @@ class Configuration {
 private:
     // Increment this any time the configuration format changes
     // It is stored along with the data to ensure that it has been written before
-    static constexpr uint32_t ExpectedTag = 0xDEADBE03;
+    static constexpr uint32_t ExpectedTag = 0xDEADBE04;
     uint32_t Tag = ExpectedTag;
 
 public:
@@ -75,6 +75,7 @@ public:
         *this = {};
 
         NoLongerUsed0 = 0;
+        CanMode = 0;
         sensorType = BOARD_DEFAULT_SENSOR_TYPE;
 
         /* default auxout curve is 0..5V for AFR 8.5 to 18.0
@@ -119,7 +120,8 @@ public:
     // Actual configuration data
     union {
         struct {
-            uint8_t NoLongerUsed0 = 0;
+            uint8_t NoLongerUsed0 : 6 = 0;
+            uint8_t CanMode : 2;
             // AUX0 and AUX1 curves
             float auxOutBins[2][8];
             float auxOutValues[2][8];
