@@ -3,8 +3,6 @@
 #include <cstdint>
 
 void InitCan();
-void SendCanData(float lambda, uint16_t measuredResistance);
-void SendRusefiFormat(uint8_t ch);
 
 enum class HeaterAllow {
     // no CAN message telling us what to do has been rx'd

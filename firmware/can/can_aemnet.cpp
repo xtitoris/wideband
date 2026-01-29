@@ -56,18 +56,6 @@ static_assert(sizeof(EgtData) == 8);
 
 } //namespace aemnet
 
-static int LambdaIsValid(int ch)
-{
-    const auto& sampler = GetSampler(ch);
-    const auto& heater = GetHeaterController(ch);
-
-    float nernstDc = sampler.GetNernstDc();
-
-    return ((heater.IsRunningClosedLoop()) &&
-            (nernstDc > (NERNST_TARGET - 0.1f)) &&
-            (nernstDc < (NERNST_TARGET + 0.1f)));
-}
-
 void SendAemNetUEGOFormat(Configuration* cfg, uint8_t ch)
 {
     if (cfg->afr[ch].AemNetTx) {

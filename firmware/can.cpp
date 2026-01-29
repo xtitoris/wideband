@@ -4,7 +4,8 @@
 
 #include "status.h"
 #include "can_helper.h"
-#include "can_aemnet.h"
+#include "can/can_rusefi.h"
+#include "can/can_aemnet.h"
 #include "heater_control.h"
 #include "lambda_conversion.h"
 #include "sampling.h"
@@ -22,7 +23,7 @@ static Configuration* configuration;
 static THD_WORKING_AREA(waCanTxThread, 512);
 void CanTxThread(void*)
 {
-    int cycle;
+    int cycle = 0;
     chRegSetThreadName("CAN Tx");
 
     // Current system time.
@@ -183,52 +184,11 @@ void InitCan()
     chThdCreateStatic(waCanRxThread, sizeof(waCanRxThread), NORMALPRIO - 4, CanRxThread, nullptr);
 }
 
-void SendRusefiFormat(uint8_t ch)
-{
-    auto baseAddress = WB_DATA_BASE_ADDR + 2 * configuration->afr[ch].RusEfiIdx;
-
-    const auto& sampler = GetSampler(ch);
-    const auto& heater = GetHeaterController(ch);
-
-    auto nernstDc = sampler.GetNernstDc();
-    auto pumpDuty = GetPumpOutputDuty(ch);
-    auto lambda = GetLambda(ch);
-
-    // Lambda is valid if:
-    // 1. Nernst voltage is near target
-    // 2. Lambda is >0.6 (sensor isn't specified below that)
-    bool lambdaValid =
-            nernstDc > (NERNST_TARGET - 0.1f) && nernstDc < (NERNST_TARGET + 0.1f) &&
-            lambda > 0.6f;
-
-    if (configuration->afr[ch].RusEfiTx) {
-        CanTxTyped<wbo::StandardData> frame(baseAddress + 0);
-
-        // The same header is imported by the ECU and checked against this data in the frame
-        frame.get().Version = RUSEFI_WIDEBAND_VERSION;
-
-        uint16_t lambdaInt = lambdaValid ? (lambda * 10000) : 0;
-        frame.get().Lambda = lambdaInt;
-        frame.get().TemperatureC = sampler.GetSensorTemperature();
-        bool heaterClosedLoop = heater.IsRunningClosedLoop();
-        frame.get().Valid = (heaterClosedLoop && lambdaValid) ? 0x01 : 0x00;
-    }
-
-    if (configuration->afr[ch].RusEfiTxDiag) {
-        CanTxTyped<wbo::DiagData> frame(baseAddress + 1);;
-
-        frame.get().Esr = sampler.GetSensorInternalResistance();
-        frame.get().NernstDc = nernstDc * 1000;
-        frame.get().PumpDuty = pumpDuty * 255;
-        frame.get().status = GetCurrentStatus(ch);
-        frame.get().HeaterDuty = GetHeaterDuty(ch) * 255;
-    }
-}
 
 // Weak link so boards can override it
 __attribute__((weak)) void SendCanForChannel(uint8_t ch)
 {
-    SendRusefiFormat(ch);
+    SendRusefiFormat(configuration, ch);
     SendAemNetUEGOFormat(configuration, ch);
 }
 
