@@ -86,3 +86,7 @@ void SendAemNetEGTFormat(Configuration* cfg, uint8_t ch)
     }
 }
 #endif /* EGT_CHANNELS > 0 */
+
+void ProcessAemNetCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
+{
+}

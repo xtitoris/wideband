@@ -41,6 +41,11 @@ enum class SensorType : uint8_t {
     LSUADV = 2,
 };
 
+struct CanStatusData{
+    HeaterAllow heaterAllow;
+    float remoteBatteryVoltage;
+};
+
 #ifndef BOARD_DEFAULT_SENSOR_TYPE
 #define BOARD_DEFAULT_SENSOR_TYPE SensorType::LSU49
 #endif

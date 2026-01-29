@@ -15,3 +15,11 @@
 void SendMotecAfrFormat(Configuration* configuration, uint8_t ch)
 {
 }
+
+void SendMotecEgtFormat(Configuration* configuration, uint8_t ch)
+{
+}
+
+void ProcessMotecCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
+{
+}

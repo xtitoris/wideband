@@ -15,3 +15,11 @@
 void SendLinkAfrFormat(Configuration* configuration, uint8_t ch)
 {
 }
+
+void SendLinkEgtFormat(Configuration* configuration, uint8_t ch)
+{
+}
+
+void ProcessLinkCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
+{
+}

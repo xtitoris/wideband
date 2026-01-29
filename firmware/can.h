@@ -16,7 +16,6 @@ enum class HeaterAllow {
 };
 
 HeaterAllow GetHeaterAllowed();
-
 float GetRemoteBatteryVoltage();
 
 // implement this for your board if you want some non-standard behavior
