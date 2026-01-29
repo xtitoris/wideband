@@ -4,7 +4,6 @@
 
 #include "hal.h"
 #include "port.h"
-#include "byteswap.h"
 
 void SendAemNetUEGOFormat(Configuration* cfg, uint8_t ch);
 void SendAemNetEGTFormat(Configuration* cfg, uint8_t ch);

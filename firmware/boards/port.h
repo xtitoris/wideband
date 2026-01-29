@@ -139,10 +139,18 @@ public:
                 bool RusEfiTx:1;
                 bool RusEfiTxDiag:1;
                 bool AemNetTx:1;
+                bool EcuMasterTx:1;
+                bool HaltechTx:1;
+                bool LinkTx:1;
+                bool MotecTx:1;
 
                 uint8_t RusEfiIdx;
                 uint8_t AemNetIdOffset;
-                uint8_t pad[5];
+                uint8_t EcuMasterIdOffset;
+                uint8_t HaltechIdOffset;
+                uint8_t LinkIdOffset;
+                uint8_t MotecIdOffset;
+                uint8_t pad;
             } afr[2];
 
             // per EGT channel settings

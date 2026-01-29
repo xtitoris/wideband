@@ -3,6 +3,7 @@
 
 #include "can_rusefi.h"
 
+#include "util/byteswap.h"
 #include "port.h"
 #include "status.h"
 #include "can_helper.h"
@@ -146,7 +147,6 @@ void ProcessRusefiCanMessage(const CANRxFrame* frame, Configuration* configurati
     else if (frame->DLC == 1 && CAN_ID(*frame) == WB_MSG_SET_INDEX)
     {
         int offset = frame->data8[0];
-        configuration = GetConfiguration();
         for (int i = 0; i < AFR_CHANNELS; i++) {
             configuration->afr[i].RusEfiIdx = offset + i;
         }

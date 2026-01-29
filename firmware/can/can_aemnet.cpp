@@ -1,6 +1,8 @@
 #include "can.h"
 #include "hal.h"
 
+#include "util/byteswap.h"
+
 #include "can_helper.h"
 #include "can_aemnet.h"
 

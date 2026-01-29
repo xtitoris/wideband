@@ -3,6 +3,7 @@
 
 #include "can_motec.h"
 
+#include "util/byteswap.h"
 #include "port.h"
 #include "status.h"
 #include "can_helper.h"
