@@ -47,4 +47,6 @@ const CANConfig& GetCanConfig(uint8_t mode) {
         case 1:
             return canConfig1000;
     }
+    // default to 500kbps
+    return canConfig500;
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "hal.h"
 #include <cstdint>
 #include "byteswap.h"
 #include "port.h"

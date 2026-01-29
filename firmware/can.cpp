@@ -6,6 +6,11 @@
 #include "can_helper.h"
 #include "can/can_rusefi.h"
 #include "can/can_aemnet.h"
+#include "can/can_motec.h"
+#include "can/can_ecumaster.h"
+#include "can/can_haltech.h"
+#include "can/can_link.h"
+
 #include "heater_control.h"
 #include "lambda_conversion.h"
 #include "sampling.h"
@@ -190,6 +195,10 @@ __attribute__((weak)) void SendCanForChannel(uint8_t ch)
 {
     SendRusefiFormat(configuration, ch);
     SendAemNetUEGOFormat(configuration, ch);
+    SendEcuMasterAfrFormat(configuration, ch);
+    SendHaltechAfrFormat(configuration, ch);
+    SendLinkAfrFormat(configuration, ch);
+    SendMotecAfrFormat(configuration, ch);
 }
 
 __attribute__((weak)) void SendCanEgtForChannel(uint8_t ch)
