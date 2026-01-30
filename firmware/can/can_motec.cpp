@@ -17,10 +17,11 @@ void SendMotecAfrFormat(Configuration* configuration, uint8_t ch)
 {
 }
 
+
+#if (EGT_CHANNELS > 0)
+
 void SendMotecEgtFormat(Configuration* configuration, uint8_t ch)
 {
 }
 
-void ProcessMotecCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
-{
-}
+#endif

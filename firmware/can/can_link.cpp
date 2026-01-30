@@ -11,6 +11,7 @@
 #include "pump_dac.h"
 #include "heater_control.h"
 #include "lambda_conversion.h"
+#include "max3185x.h"
 #include "../for_rusefi/wideband_can.h"
 
 // Link ECU protocol
@@ -87,53 +88,55 @@ static void SendAck(uint16_t id, uint8_t id_ok, uint8_t bus_freq_ok)
 
 void SendLinkAfrFormat(Configuration* configuration, uint8_t ch)
 {
-    if (configuration->afr[ch].EcuMasterTx) {
-        auto id = LINKECU_L2C_BASE_ID + configuration->afr[ch].EcuMasterIdOffset * 2;
-        const auto& sampler = GetSampler(ch);
-        const auto& heater = GetHeaterController(ch);
+    auto id = LINKECU_L2C_BASE_ID + configuration->afr[ch].ExtraCanIdOffset * 2;
+    const auto& sampler = GetSampler(ch);
+    const auto& heater = GetHeaterController(ch);
 
-        CanTxTyped<linkecu::LinkEcuAfrData1> frame(id, true);
-        frame.get().Lambda = GetLambda(ch) * 1000;
-        frame.get().SensorTemp = sampler.GetSensorTemperature();
+    CanTxTyped<linkecu::LinkEcuAfrData1> frame(id, true);
+    frame.get().Lambda = GetLambda(ch) * 1000;
+    frame.get().SensorTemp = sampler.GetSensorTemperature();
 
-        switch (heater.GetHeaterState()) {
-            case HeaterState::Preheat:
-            case HeaterState::WarmupRamp:
-                frame.get().Status = 5; // Heating
-                break;
-            case HeaterState::ClosedLoop:
-                frame.get().Status = 6; // Operating
-                break;
-            case HeaterState::Stopped:
-            default:
-                frame.get().Status = 1; // Disabled
-                break;
-        }
-        frame.get().ErrorCodes = 0; // TODO:
-
-        uint8_t deviceType = 0;
-        switch (configuration->sensorType) {
-            case SensorType::LSU42:
-                deviceType = 0;
-                break;
-            case SensorType::LSU49:
-                deviceType = 1;
-                break;
-            case SensorType::LSUADV:
-                deviceType = 2;
-                break;
-        }
-
-        CanTxTyped<linkecu::LinkEcuAfrData2> frame2(id, true);
-        frame2.get().IpCurrent = sampler.GetPumpNominalCurrent() * 1000;
-        frame2.get().SystemVoltage = sampler.GetInternalHeaterVoltage() * 100;
-        frame2.get().HeaterVoltage = heater.GetHeaterEffectiveVoltage() * 100;
+    switch (heater.GetHeaterState()) {
+        case HeaterState::Preheat:
+        case HeaterState::WarmupRamp:
+            frame.get().Status = 5; // Heating
+            break;
+        case HeaterState::ClosedLoop:
+            frame.get().Status = 6; // Operating
+            break;
+        case HeaterState::Stopped:
+        default:
+            frame.get().Status = 1; // Disabled
+            break;
     }
+    frame.get().ErrorCodes = 0; // TODO:
+
+    uint8_t deviceType = 0;
+    switch (configuration->sensorType) {
+        case SensorType::LSU42:
+            deviceType = 0;
+            break;
+        case SensorType::LSU49:
+            deviceType = 1;
+            break;
+        case SensorType::LSUADV:
+            deviceType = 2;
+            break;
+    }
+
+    CanTxTyped<linkecu::LinkEcuAfrData2> frame2(id, true);
+    frame2.get().IpCurrent = sampler.GetPumpNominalCurrent() * 1000;
+    frame2.get().SystemVoltage = sampler.GetInternalHeaterVoltage() * 100;
+    frame2.get().HeaterVoltage = heater.GetHeaterEffectiveVoltage() * 100;
 }
+
+#if (EGT_CHANNELS > 0)
 
 void SendLinkEgtFormat(Configuration* configuration, uint8_t ch)
 {
 }
+
+#endif
 
 void ProcessLinkCanMessage(const CANRxFrame* frame, Configuration* configuration, struct CanStatusData* statusData)
 {
@@ -171,7 +174,7 @@ void ProcessLinkCanMessage(const CANRxFrame* frame, Configuration* configuration
     else if (id >= LINKECU_L2C_SET_IDX_ID && id <= LINKECU_L2C_SET_IDX_ID + 7 && frame->DLC == 8 && (frame->data8[0] == 24))
     {
         for (int i = 0; i < AFR_CHANNELS; i++) {
-            if (id - configuration->afr[i].LinkIdOffset == LINKECU_L2C_SET_IDX_ID) {
+            if (id - configuration->afr[i].ExtraCanIdOffset == LINKECU_L2C_SET_IDX_ID) {
                 uint8_t offset = frame->data8[1] & 0x0F;
 
                 // 0 = 100 kbit/s
@@ -181,7 +184,7 @@ void ProcessLinkCanMessage(const CANRxFrame* frame, Configuration* configuration
                 // 4 = 1 Mbit/s (default)
                 uint8_t bus_freq = frame->data8[1];
 
-                configuration->afr[i].LinkIdOffset = offset;
+                configuration->afr[i].ExtraCanIdOffset = offset;
                 SetConfiguration();
                 SendAck(id, 1, 0); // id_ok = 1, bus_freq_ok not implemented yet
             }

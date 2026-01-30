@@ -11,6 +11,7 @@
 #include "pump_dac.h"
 #include "heater_control.h"
 #include "lambda_conversion.h"
+#include "max3185x.h"
 #include "../for_rusefi/wideband_can.h"
 
 // Haltech protocol
@@ -43,6 +44,13 @@ struct HaltechAfrData1
 
 static_assert(sizeof(HaltechAfrData1) == 8);
 
+struct HaltechEgtData
+{
+    beint16_t Egt[4];
+} __attribute__((packed));
+
+static_assert(sizeof(HaltechEgtData) == 8);
+
 } //namespace haltech
 
 
@@ -51,36 +59,55 @@ void SendHaltechAfrFormat(Configuration* configuration, uint8_t ch)
     if (ch % 2 != 0)
         return; // Haltech protocol sends both channels in one message
 
-    if (configuration->afr[ch].HaltechTx) {
-        auto id = HALTECH_L2C_BASE_ID; // WB2A
-        switch (configuration->afr[ch].HaltechIdOffset) {
-            case 1:
-                id += 4; break; // WB2B
-            case 2:
-                id += 6; break; // WB2C
-            case 3:
-                id += 8; break; // WB2D
-        }
-
-        const auto& sampler1 = GetSampler(ch);
-        const auto& sampler2 = GetSampler(ch+1);
-
-        CanTxTyped<haltech::HaltechAfrData1> frame(id, true);
-        frame.get().VBatt = sampler1.GetInternalHeaterVoltage() * 255.0 / 20.0f;
-        frame.get().Lambda1 = GetLambda(ch) * 1024;
-        frame.get().Lambda2 = GetLambda(ch + 1) * 1024;
-        frame.get().RSense1 = sampler1.GetSensorInternalResistance();
-        frame.get().RSense2 = sampler2.GetSensorInternalResistance();
-
-        // TODO: set flags
-        frame.get().Flags = 0;
+    auto id = HALTECH_L2C_BASE_ID; // WB2A
+    switch (configuration->afr[ch].ExtraCanIdOffset) {
+        case 1:
+            id += 4; break; // WB2B
+        case 2:
+            id += 6; break; // WB2C
+        case 3:
+            id += 8; break; // WB2D
     }
+
+    const auto& sampler1 = GetSampler(ch);
+    const auto& sampler2 = GetSampler(ch+1);
+
+    CanTxTyped<haltech::HaltechAfrData1> frame(id, true);
+    frame.get().VBatt = sampler1.GetInternalHeaterVoltage() * 255.0 / 20.0f;
+    frame.get().Lambda1 = GetLambda(ch) * 1024;
+    
+    if (ch + 1 < AFR_CHANNELS) {
+        frame.get().Lambda2 = GetLambda(ch + 1) * 1024;
+    }
+
+    frame.get().RSense1 = sampler1.GetSensorInternalResistance();
+    frame.get().RSense2 = sampler2.GetSensorInternalResistance();
+
+    // TODO: set flags
+    frame.get().Flags = 0;
 }
+
+#if (EGT_CHANNELS > 0)
+
+#define HALTECH_TCA_BASE_ID         716
+
+// id 716 for "box a assigned to can tc 1-4" and
+// id 717 for "box b assigned to can tc 5-8"
+// Multiplier of 2381 divider of 5850 and offset of -250 which gives me realistic values.
 
 void SendHaltechEgtFormat(Configuration* configuration, uint8_t ch)
 {
+    if (ch != 0)
+        return; // Haltech protocol sends 1-4 channels in one message
+
+    auto id = HALTECH_TCA_BASE_ID + configuration->egt[ch].ExtraCanIdOffset;
+
+    CanTxTyped<haltech::HaltechEgtData> frame(id, true);
+
+    for (uint8_t i = 0; i < EGT_CHANNELS; i++)
+    {
+        frame.get().Egt[i] = (getEgtDrivers()[i].temperature + 250.0f) * 5850.0f / 2381.0f;
+    }
 }
 
-void ProcessHaltechCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
-{
-}
+#endif

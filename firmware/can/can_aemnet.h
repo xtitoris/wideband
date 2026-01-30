@@ -7,5 +7,3 @@
 
 void SendAemNetUEGOFormat(Configuration* cfg, uint8_t ch);
 void SendAemNetEGTFormat(Configuration* cfg, uint8_t ch);
-
-void ProcessAemNetCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData);

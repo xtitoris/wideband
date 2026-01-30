@@ -76,9 +76,14 @@ void SendRusefiFormat(Configuration* configuration, uint8_t ch)
     }
 }
 
+
+#if (EGT_CHANNELS > 0)
+
 void SendRusefiEgtFormat(Configuration* configuration, uint8_t ch)
 {
 }
+
+#endif
 
 void ProcessRusefiCanMessage(const CANRxFrame* frame, Configuration* configuration, struct CanStatusData* statusData)
 {

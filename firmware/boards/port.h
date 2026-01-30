@@ -59,6 +59,16 @@ enum class AuxOutputMode : uint8_t {
     Egt1 = 5,
 };
 
+enum class CanProtocol : uint8_t {
+    None = 0,
+    AemNet = 1, // for backward compatibility
+    LinkEcu = 2,
+    Haltech = 3,
+    EcuMasterClassic = 4,
+    EcuMasterBlack = 5,
+    Motec = 6,
+};
+
 class Configuration {
 private:
     // Increment this any time the configuration format changes
@@ -98,9 +108,9 @@ public:
             afr[i].RusEfiTxDiag = true;
             afr[i].RusEfiIdx = i;
 
-            // Disable AemNet
-            afr[i].AemNetTx = false;
-            afr[i].AemNetIdOffset = i;
+            // No extra protocol by default
+            afr[i].ExtraCanProtocol = CanProtocol::None;
+            afr[i].ExtraCanIdOffset = i;
         }
 
         for (i = 0; i < EGT_CHANNELS; i++) {
@@ -109,9 +119,9 @@ public:
             egt[i].RusEfiTxDiag = false;
             egt[i].RusEfiIdx = i;
 
-            // Enable AemNet
-            egt[i].AemNetTx = true;
-            egt[i].AemNetIdOffset = i;
+            // AemNet protocol by default
+            egt[i].ExtraCanProtocol = CanProtocol::AemNet;
+            egt[i].ExtraCanIdOffset = i;
         }
 
         heaterConfig.HeaterSupplyOffVoltage = HEATER_SUPPLY_OFF_VOLTAGE;
@@ -138,30 +148,24 @@ public:
             struct {
                 bool RusEfiTx:1;
                 bool RusEfiTxDiag:1;
-                bool AemNetTx:1;
-                bool EcuMasterTx:1;
-                bool HaltechTx:1;
-                bool LinkTx:1;
-                bool MotecTx:1;
+                CanProtocol ExtraCanProtocol:4;
+
 
                 uint8_t RusEfiIdx;
-                uint8_t AemNetIdOffset;
-                uint8_t EcuMasterIdOffset;
-                uint8_t HaltechIdOffset;
-                uint8_t LinkIdOffset;
-                uint8_t MotecIdOffset;
-                uint8_t pad;
+                uint8_t ExtraCanIdOffset;
+                uint8_t Reserved[5];
             } afr[2];
 
             // per EGT channel settings
             struct {
                 bool RusEfiTx:1;
                 bool RusEfiTxDiag:1;
-                bool AemNetTx:1;
+                CanProtocol ExtraCanProtocol:4;
+
 
                 uint8_t RusEfiIdx;
-                uint8_t AemNetIdOffset;
-                uint8_t pad[5];
+                uint8_t ExtraCanIdOffset;
+                uint8_t Reserved[5];
             } egt[2];
 
             struct HeaterConfig heaterConfig;

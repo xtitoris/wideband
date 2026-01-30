@@ -12,6 +12,7 @@
 #include "pump_dac.h"
 #include "heater_control.h"
 #include "lambda_conversion.h"
+#include "max3185x.h"
 #include "../for_rusefi/wideband_can.h"
 
 // EcuMaster protocol
@@ -56,51 +57,76 @@ struct EcuMasterAfrData2
 
 static_assert(sizeof(EcuMasterAfrData2) == 8);
 
+// Offset can be 0 or 1
+#define ECUMASTER_CLASSIC_EGT_BASE_ID         0x610
+#define ECUMASTER_BLACK_EGT_BASE_ID           0x660
+
+struct EcuMasterEgtData
+{
+    beint16_t Egt[4];
+} __attribute__((packed));
+
+static_assert(sizeof(EcuMasterEgtData) == 8);
+
 } //namespace ecumaster
 
 
 void SendEcuMasterAfrFormat(Configuration* configuration, uint8_t ch)
 {
-    if (configuration->afr[ch].EcuMasterTx) {
-        auto id = ECUMASTER_L2C_BASE_ID + configuration->afr[ch].EcuMasterIdOffset * 2;
-        const auto& sampler = GetSampler(ch);
+    auto id = ECUMASTER_L2C_BASE_ID + configuration->afr[ch].ExtraCanIdOffset * 2;
+    const auto& sampler = GetSampler(ch);
 
-        CanTxTyped<ecumaster::EcuMasterAfrData1> frame(id, true);
-        frame.get().SystemVolts = sampler.GetInternalHeaterVoltage() * 10;
-        frame.get().HeaterPower = 0;
-        frame.get().SensorTemp = sampler.GetSensorTemperature() / 4;
-        frame.get().Lambda = GetLambda(ch) * 1000;
+    CanTxTyped<ecumaster::EcuMasterAfrData1> frame(id, true);
+    frame.get().SystemVolts = sampler.GetInternalHeaterVoltage() * 10;
+    frame.get().HeaterPower = 0;
+    frame.get().SensorTemp = sampler.GetSensorTemperature() / 4;
+    frame.get().Lambda = GetLambda(ch) * 1000;
 
-        frame.get().Flags1 = 0; // TODO:
+    frame.get().Flags1 = 0; // TODO:
 
-        uint8_t deviceType = 0;
-        switch (configuration->sensorType) {
-            case SensorType::LSU42:
-                deviceType = 0;
-                break;
-            case SensorType::LSU49:
-                deviceType = 1;
-                break;
-            case SensorType::LSUADV:
-                deviceType = 2;
-                break;
-        }
-
-        frame.get().Flags2 = 0
-            | 0x02 << 2 // calibration state = Finished
-            | deviceType << 5;
-
-        CanTxTyped<ecumaster::EcuMasterAfrData2> frame2(id + 1, true);
-        frame2.get().IpCurrent = sampler.GetPumpNominalCurrent() * 1000;
-        frame2.get().OxygenConcentration = 0; // TODO:
-        frame2.get().Ri = sampler.GetSensorInternalResistance() * 10;
+    uint8_t deviceType = 0;
+    switch (configuration->sensorType) {
+        case SensorType::LSU42:
+            deviceType = 0;
+            break;
+        case SensorType::LSU49:
+            deviceType = 1;
+            break;
+        case SensorType::LSUADV:
+            deviceType = 2;
+            break;
     }
+
+    frame.get().Flags2 = 0
+        | 0x02 << 2 // calibration state = Finished
+        | deviceType << 5;
+
+    CanTxTyped<ecumaster::EcuMasterAfrData2> frame2(id + 1, true);
+    frame2.get().IpCurrent = sampler.GetPumpNominalCurrent() * 1000;
+    frame2.get().OxygenConcentration = 0; // TODO:
+    frame2.get().Ri = sampler.GetSensorInternalResistance() * 10;
 }
+
+#if (EGT_CHANNELS > 0)
+
 
 void SendEcuMasterEgtFormat(Configuration* configuration, uint8_t ch)
 {
+    if (ch != 0)
+        return; // EcuMaster protocol sends 1-4 channels in one message
+
+    auto base = ECUMASTER_CLASSIC_EGT_BASE_ID;
+    if (configuration->egt[ch].ExtraCanProtocol == CanProtocol::EcuMasterBlack)
+        base = ECUMASTER_BLACK_EGT_BASE_ID;
+
+    auto id = base + configuration->egt[ch].ExtraCanIdOffset;
+
+    CanTxTyped<ecumaster::EcuMasterEgtData> frame(id, true);
+
+    for (uint8_t i = 0; i < EGT_CHANNELS; i++)
+    {
+        frame.get().Egt[i] = getEgtDrivers()[i].temperature;
+    }
 }
 
-void ProcessEcuMasterCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)
-{
-}
+#endif

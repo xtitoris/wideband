@@ -60,33 +60,31 @@ static_assert(sizeof(EgtData) == 8);
 
 void SendAemNetUEGOFormat(Configuration* cfg, uint8_t ch)
 {
-    if (cfg->afr[ch].AemNetTx) {
-        auto id = AEMNET_UEGO_BASE_ID + cfg->afr[ch].AemNetIdOffset;
-        const auto& sampler = GetSampler(ch);
+    auto id = AEMNET_UEGO_BASE_ID + cfg->afr[ch].ExtraCanIdOffset;
+    const auto& sampler = GetSampler(ch);
 
-        CanTxTyped<aemnet::UEGOData> frame(id, true);
+    CanTxTyped<aemnet::UEGOData> frame(id, true);
 
-        frame.get().Lambda = GetLambda(ch) * 10000;
-        frame.get().Oxygen = 0; // TODO:
-        frame.get().SystemVolts = sampler.GetInternalHeaterVoltage() * 10;
-        frame.get().Flags =
-            ((cfg->sensorType == SensorType::LSU49) ? 0x02 : 0x00) |
-            ((LambdaIsValid(ch)) ? 0x80 : 0x00);
-        frame.get().Faults = 0; //TODO:
-    }
+    frame.get().Lambda = GetLambda(ch) * 10000;
+    frame.get().Oxygen = 0; // TODO:
+    frame.get().SystemVolts = sampler.GetInternalHeaterVoltage() * 10;
+    frame.get().Flags =
+        ((cfg->sensorType == SensorType::LSU49) ? 0x02 : 0x00) |
+        ((LambdaIsValid(ch)) ? 0x80 : 0x00);
+    frame.get().Faults = 0; //TODO:
 }
 
 #if (EGT_CHANNELS > 0)
+
 void SendAemNetEGTFormat(Configuration* cfg, uint8_t ch)
 {
-    if (cfg->egt[ch].AemNetTx) {
-        auto id = AEMNET_EGT_BASE_ID + cfg->egt[ch].AemNetIdOffset;
+    auto id = AEMNET_EGT_BASE_ID + cfg->egt[ch].ExtraCanIdOffset;
 
-        CanTxTyped<aemnet::EgtData> frame(id, true);
+    CanTxTyped<aemnet::EgtData> frame(id, true);
 
-        frame.get().TemperatureC = getEgtDrivers()[ch].temperature;
-    }
+    frame.get().TemperatureC = getEgtDrivers()[ch].temperature;
 }
+
 #endif /* EGT_CHANNELS > 0 */
 
 void ProcessAemNetCanMessage(const CANRxFrame* msg, Configuration* configuration, struct CanStatusData* statusData)

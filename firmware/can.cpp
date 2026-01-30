@@ -69,11 +69,7 @@ void CanRxThread(void*)
         }
 
         ProcessRusefiCanMessage(&frame, configuration, &CanStatusData);
-        ProcessAemNetCanMessage(&frame, configuration, &CanStatusData);
-        ProcessEcuMasterCanMessage(&frame, configuration, &CanStatusData);
-        ProcessHaltechCanMessage(&frame, configuration, &CanStatusData);
         ProcessLinkCanMessage(&frame, configuration, &CanStatusData);
-        ProcessMotecCanMessage(&frame, configuration, &CanStatusData);
     }
 }
 
@@ -101,21 +97,56 @@ void InitCan()
 __attribute__((weak)) void SendCanForChannel(uint8_t ch)
 {
     SendRusefiFormat(configuration, ch);
-    SendAemNetUEGOFormat(configuration, ch);
-    SendEcuMasterAfrFormat(configuration, ch);
-    SendHaltechAfrFormat(configuration, ch);
-    SendLinkAfrFormat(configuration, ch);
-    SendMotecAfrFormat(configuration, ch);
+
+    switch (configuration->afr[ch].ExtraCanProtocol)
+    {
+        case CanProtocol::AemNet:
+            SendAemNetUEGOFormat(configuration, ch);
+            break;
+        case CanProtocol::EcuMasterClassic:
+        case CanProtocol::EcuMasterBlack:
+            SendEcuMasterAfrFormat(configuration, ch);
+            break;
+        case CanProtocol::Haltech:
+            SendHaltechAfrFormat(configuration, ch);
+            break;
+        case CanProtocol::LinkEcu:
+            SendLinkAfrFormat(configuration, ch);
+            break;
+        case CanProtocol::Motec:
+            SendMotecAfrFormat(configuration, ch);
+            break;
+        default:
+            break;
+    }
 }
 
 __attribute__((weak)) void SendCanEgtForChannel(uint8_t ch)
 {
 #if (EGT_CHANNELS > 0)
+
     SendRusefiEgtFormat(configuration, ch);
-    SendAemNetEGTFormat(configuration, ch);
-    SendEcuMasterAfrFormat(configuration, ch);
-    SendHaltechAfrFormat(configuration, ch);
-    SendLinkAfrFormat(configuration, ch);
-    SendMotecAfrFormat(configuration, ch);
+
+    switch (configuration->afr[ch].ExtraCanProtocol)
+    {
+        case CanProtocol::AemNet:
+            SendAemNetEGTFormat(configuration, ch);
+            break;
+        case CanProtocol::EcuMasterClassic:
+        case CanProtocol::EcuMasterBlack:
+            SendEcuMasterEgtFormat(configuration, ch);
+            break;
+        case CanProtocol::Haltech:
+            SendHaltechEgtFormat(configuration, ch);
+            break;
+        case CanProtocol::LinkEcu:
+            SendLinkEgtFormat(configuration, ch);
+            break;
+        case CanProtocol::Motec:
+            SendMotecEgtFormat(configuration, ch);
+            break;
+        default:
+            break;
+    }
 #endif
 }
