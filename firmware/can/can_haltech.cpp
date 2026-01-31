@@ -37,8 +37,8 @@ struct HaltechAfrData1
                                // 3 = Sensor Short Circuit
                                // 4 = Sensor Open Circuit
                                // 5 = Sensor Cold
-                               // 0:3 Sensor 1
-                               // 4:7 Sensor 2
+                               // 0:3 Sensor 1 flags
+                               // 4:7 Sensor 2 flags
     uint8_t VBatt;             // y = x * 20 / 255 Volts
 } __attribute__((packed));
 
@@ -93,7 +93,7 @@ void SendHaltechAfrFormat(Configuration* configuration, uint8_t ch)
 
 // id 716 for "box a assigned to can tc 1-4" and
 // id 717 for "box b assigned to can tc 5-8"
-// Multiplier of 2381 divider of 5850 and offset of -250 which gives me realistic values.
+// Multiplier of 2381 divider of 5850 and offset of -250.
 
 void SendHaltechEgtFormat(Configuration* configuration, uint8_t ch)
 {

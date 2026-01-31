@@ -61,6 +61,43 @@ struct LinkEcuAfrData2
 
 static_assert(sizeof(LinkEcuAfrData2) == 8);
 
+
+struct LinkEcuEgtData1
+{
+    beint16_t Egt[4];    // 0 to 1250 C; 1/4
+} __attribute__((packed));
+
+static_assert(sizeof(LinkEcuEgtData1) == 8);
+
+
+struct LinkEcuEgtData3
+{
+    beint16_t Egt[2];    // 0 to 1250 C; 1/4
+    uint16_t Reserved;
+    uint8_t SupplyVolt; // 0.0 to 25.5 V; 1/10
+    uint8_t ChipTemp;   // 0 to 125 C; 1/1
+} __attribute__((packed));
+
+static_assert(sizeof(LinkEcuEgtData3) == 8);
+
+struct LinkEcuEgtStatus
+{
+    uint8_t TcStatus1: 4; // 0=OK, 1=short to VCC, 2=Short to GND, 3=not connnected, 4=unknown error, 5=chip missing
+    uint8_t TcStatus2: 4;
+    uint8_t TcStatus3: 4;
+    uint8_t TcStatus4: 4;
+    uint8_t TcStatus5: 4;
+    uint8_t TcStatus6: 4;
+    uint8_t TcStatus7: 4;
+    uint8_t TcStatus8: 4;
+    uint8_t TcStatus9: 4;
+    uint8_t TcStatus10: 4;
+    uint8_t Reserved[3];
+} __attribute__((packed));
+
+static_assert(sizeof(LinkEcuEgtStatus) == 8);
+
+
 } //namespace linkecu
 
 
@@ -132,8 +169,37 @@ void SendLinkAfrFormat(Configuration* configuration, uint8_t ch)
 
 #if (EGT_CHANNELS > 0)
 
+#define LINKECU_TCCXX_BASE_ID         0x705
+#define LINKECU_TCCXX_DATA_3_ID       0x705
+#define LINKECU_TCCXX_STATUS_ID       0x708
+
 void SendLinkEgtFormat(Configuration* configuration, uint8_t ch)
 {
+    if (ch != 0)
+        return; // Link ECU protocol sends 1-4 channels in one message
+
+    const auto& sampler = GetSampler(ch);
+    const auto egtDrivers = getEgtDrivers();
+
+    CanTxTyped<linkecu::LinkEcuEgtData1> frame(LINKECU_TCCXX_BASE_ID, true);
+    frame.get().Egt[0] = egtDrivers[0].temperature / 4;
+
+    if (EGT_CHANNELS > 1) {
+        frame.get().Egt[1] = egtDrivers[1].temperature / 4;
+    }
+    if (EGT_CHANNELS > 2) {
+        frame.get().Egt[2] = egtDrivers[2].temperature / 4;
+    }
+    if (EGT_CHANNELS > 3) {
+        frame.get().Egt[3] = egtDrivers[3].temperature / 4;
+    }
+
+    CanTxTyped<linkecu::LinkEcuEgtData3> frame2(LINKECU_TCCXX_DATA_3_ID, true);
+    frame2.get().SupplyVolt = sampler.GetInternalHeaterVoltage() / 10;
+    frame2.get().ChipTemp = GetMcuTemperature();
+
+    CanTxTyped<linkecu::LinkEcuEgtStatus> frame3(LINKECU_TCCXX_STATUS_ID, true);
+    // TODO: set actual status
 }
 
 #endif
