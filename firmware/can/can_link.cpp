@@ -116,19 +116,6 @@ void SendLinkAfrFormat(Configuration* configuration, uint8_t ch)
     }
     frame->ErrorCodes = 0; // TODO:
 
-    uint8_t deviceType = 0;
-    switch (configuration->sensorType) {
-        case SensorType::LSU42:
-            deviceType = 0;
-            break;
-        case SensorType::LSU49:
-            deviceType = 1;
-            break;
-        case SensorType::LSUADV:
-            deviceType = 2;
-            break;
-    }
-
     CanTxTyped<linkecu::AfrData2> frame2(id, true);
     frame2->IpCurrent = sampler.GetPumpNominalCurrent() * 1000;
     frame2->SystemVoltage = sampler.GetInternalHeaterVoltage() * 100;
@@ -192,6 +179,8 @@ static_assert(sizeof(EgtStatus) == 8);
 
 void SendLinkEgtFormat(Configuration* configuration, uint8_t ch)
 {
+    (void)configuration;
+
     if (ch != 0)
         return; // Link ECU protocol sends 1-4 channels in one message
 
@@ -260,7 +249,7 @@ void ProcessLinkCanMessage(const CANRxFrame* frame, Configuration* configuration
                 // 2 = 250 kbit/s
                 // 3 = 500 kbit/s
                 // 4 = 1 Mbit/s (default)
-                uint8_t bus_freq = frame->data8[1];
+                // uint8_t bus_freq = frame->data8[1];
 
                 configuration->afr[i].ExtraCanIdOffset = offset;
                 SetConfiguration();

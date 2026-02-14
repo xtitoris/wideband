@@ -39,7 +39,6 @@ void SendRusefiFormat(Configuration* configuration, uint8_t ch)
     auto baseAddress = WB_DATA_BASE_ADDR + 2 * configuration->afr[ch].RusEfiIdx;
 
     const auto& sampler = GetSampler(ch);
-    const auto& heater = GetHeaterController(ch);
 
     auto nernstDc = sampler.GetNernstDc();
     auto pumpDuty = GetPumpOutputDuty(ch);
@@ -78,6 +77,9 @@ void SendRusefiFormat(Configuration* configuration, uint8_t ch)
 
 void SendRusefiEgtFormat(Configuration* configuration, uint8_t ch)
 {
+    // TODO: Implement RusEFI EGT format
+    (void)configuration;
+    (void)ch;
 }
 
 #endif

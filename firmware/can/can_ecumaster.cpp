@@ -25,10 +25,10 @@ namespace ecumaster
 {
 
 enum class CalibrationStates : uint8_t {
-    Start = 0x00,
-    WaitForSPIReset = 0x04,
-    Finished = 0x08,
-    Error = 0x0C,
+    Start = 0,
+    WaitForSPIReset = 1,
+    Finished = 2,
+    Error = 3,
 };
 
 enum class SensorType : uint8_t {
