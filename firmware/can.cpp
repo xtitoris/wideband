@@ -9,6 +9,8 @@
 #include "can/can_ecumaster.h"
 #include "can/can_haltech.h"
 #include "can/can_link.h"
+#include "can/can_emtron.h"
+#include "can/can_motec.h"
 
 #include "port.h"
 
@@ -112,6 +114,12 @@ __attribute__((weak)) void SendCanForChannel(uint8_t ch)
         case CanProtocol::LinkEcu:
             SendLinkAfrFormat(configuration, ch);
             break;
+        case CanProtocol::Emtron:
+            SendEmtronAfrFormat(configuration, ch);
+            break;
+        case CanProtocol::Motec:
+            SendMotecAfrFormat(configuration, ch);
+            break;
         default:
             break;
     }
@@ -137,6 +145,11 @@ __attribute__((weak)) void SendCanEgtForChannel(uint8_t ch)
             break;
         case CanProtocol::LinkEcu:
             SendLinkEgtFormat(configuration, ch);
+            break;
+        case CanProtocol::Emtron:
+            SendEmtronEgtFormat(configuration, ch);
+        case CanProtocol::Motec:
+            SendMotec888Format(configuration, ch);
             break;
         default:
             break;

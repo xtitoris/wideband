@@ -137,18 +137,17 @@ namespace motec
 struct E888Data1
 {
     uint8_t CompoundId : 3; //   0,   1,   2,     3,     4
-    // TODO: Check and handle endianness. Value1 can't be beint16_t because it does not support bit-packing
-    uint16_t Value1 : 13; // AV1, AV3, AV5,   AV7,   AV8
-    beint16_t Value2;      // AV2, AV4, AV6,   TC7,   TC8
-    beint16_t Value3;      // TC1, TC3, TC5, Freq1, Freq2
-    beint16_t Value4;      // TC2, TC4, TC6, Freq3, Freq4
+    uint16_t  Value1 : 13; //  AV1, AV3, AV5,   AV7,   AV8  // 0-5V in 0.001 V steps
+    beint16_t Value2;      //  AV2, AV4, AV6,   TC7,   TC8
+    beint16_t Value3;      //  TC1, TC3, TC5, Freq1, Freq2
+    beint16_t Value4;      //  TC2, TC4, TC6, Freq3, Freq4
 } __attribute__((packed));
 
 static_assert(sizeof(E888Data1) == 8);
 
 } //namespace motec
 
-void SendMotecEgtFormat(Configuration* configuration, uint8_t ch)
+void SendMotec888Format(Configuration* configuration, uint8_t ch)
 {
     if (ch % 2 > 0) { // Up to 2 channels per message
         return;
@@ -162,9 +161,14 @@ void SendMotecEgtFormat(Configuration* configuration, uint8_t ch)
     switch (ch) {
         case 0: // Channels 1 and 2
             frame->CompoundId = 0;
-            frame->Value1 = egtDrivers[ch].temperature * 4;
+
+            // TODO: Send actual AV values
+            frame->Value1 = 0; // SWAP_UINT16(static_cast<uint16_t>(Value1)); // Special handling for Value1 due to bit-packing
+            frame->Value2 = 0;
+
+            frame->Value3 = egtDrivers[ch].temperature * 4; // TC1, Convert to 0.25 C resolution
             if (ch + 1 < EGT_CHANNELS) {
-                frame->Value2 = egtDrivers[ch + 1].temperature * 4;
+                frame->Value4 = egtDrivers[ch + 1].temperature * 4; // TC2
             }
             break;
         // TODO: Add more channels if needed

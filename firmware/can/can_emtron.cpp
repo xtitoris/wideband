@@ -152,7 +152,7 @@ namespace emtron
 // Device offset: 0..3
 struct ETC4Data
 {
-    // TODO: Check and handle endianness. These can't be beint16_t because they do not support bit-packing
+    // Not using beuint16_t for the 12-bit values because of the bit-packing
     uint16_t Egt1 : 12; // x1 -50 C Offset
     uint16_t Egt2 : 12;
     uint16_t Egt3 : 12;
@@ -164,6 +164,16 @@ struct ETC4Data
 
 static_assert(sizeof(ETC4Data) == 8);
 
+uint16_t get_temperature(float raw_temp)
+{
+    int16_t temp = static_cast<int16_t>(raw_temp) + 50; // Apply -50 C offset
+    
+    if (temp < 0) temp = 0; // Clamp to 0 if somehow reading is below -50 C
+    if (temp > 4095) temp = 4095; // 12-bit limit
+
+    return SWAP_UINT16(temp);
+}
+
 } //namespace emtron
 
 void SendEmtronEgtFormat(Configuration* configuration, uint8_t ch)
@@ -172,22 +182,22 @@ void SendEmtronEgtFormat(Configuration* configuration, uint8_t ch)
         return;
 
     auto id = EMTRON_ETC4_BASE_ID + configuration->egt[ch].ExtraCanIdOffset;
+    CanTxTyped<emtron::ETC4Data> frame(id, true);
 
     const auto egtDrivers = getEgtDrivers();
 
-    CanTxTyped<emtron::ETC4Data> frame(id, true);
-    frame->Egt1 = egtDrivers[0].temperature + 50;
+    frame->Egt1 = emtron::get_temperature(egtDrivers[0].temperature);
 
     #if (EGT_CHANNELS > 1)
-        frame->Egt2 = egtDrivers[1].temperature + 50;
+        frame->Egt2 = emtron::get_temperature(egtDrivers[1].temperature);
     #endif
 
     #if (EGT_CHANNELS > 2)
-        frame->Egt3 = egtDrivers[2].temperature + 50;
+        frame->Egt3 = emtron::get_temperature(egtDrivers[2].temperature);
     #endif
 
     #if (EGT_CHANNELS > 3)
-        frame->Egt4 = egtDrivers[3].temperature + 50;
+        frame->Egt4 = emtron::get_temperature(egtDrivers[3].temperature);
     #endif
 
     frame->ColdJunctionTemp = egtDrivers[0].coldJunctionTemperature;
