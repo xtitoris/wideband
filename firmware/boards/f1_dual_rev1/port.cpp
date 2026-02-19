@@ -193,6 +193,9 @@ AnalogResult AnalogSampleFinish()
     res.ch[1].PumpCurrentVoltage = AverageSamples(adcBuffer, R_IP_SENSE_IDX);
     res.ch[1].HeaterSupplyVoltage = r_heater_voltage;
 
+    res.AuxInputVoltage[0] = AverageSamples(adcBuffer, L_AUX_ADC_IDX);
+    res.AuxInputVoltage[1] = AverageSamples(adcBuffer, R_AUX_ADC_IDX);
+
     return res;
 }
 
