@@ -65,37 +65,6 @@ enum class AuxOutputMode : uint8_t {
     IOExpander = 6,
 };
 
-// These values are kept in sync just for convenience
-enum class CanAfrProtocol : uint8_t {
-    None = 0,
-    AemNet = 1,
-    LinkEcu = 2,
-    Haltech = 3,
-    EcuMaster = 4,
-    Motec = 6,
-    Emtron = 7,
-};
-
-enum class CanEgtProtocol : uint8_t {
-    None = 0,
-    AemNet0305 = 1,
-    LinkEcu = 2,
-    Haltech = 3,
-    EcuMasterClassic = 4,
-    EcuMasterBlack = 5,
-    Motec = 6,
-    Emtron = 7,
-    AemNet2224 = 8,
-};
-
-enum class CanIoProtocol : uint8_t {
-    None = 0,
-    Haltech = 3,
-    EcuMaster = 4,
-    Motec = 6,
-    Emtron = 7,
-    MsIoBox = 9,
-};
 
 class Configuration {
 private:
@@ -118,7 +87,7 @@ public:
         *this = {};
 
         NoLongerUsed0 = 0;
-        CanMode = 0;
+        BaudRate = CanBaudRate::Baud500Kbps;
         sensorType = BOARD_DEFAULT_SENSOR_TYPE;
 
         /* default auxout curve is 0..5V for AFR 8.5 to 18.0
@@ -172,7 +141,7 @@ public:
     union {
         struct {
             uint8_t NoLongerUsed0 : 6 = 0;
-            uint8_t CanMode : 2;
+            CanBaudRate BaudRate : 2;
             // AUX0 and AUX1 curves
             float auxOutBins[2][8];
             float auxOutValues[2][8];

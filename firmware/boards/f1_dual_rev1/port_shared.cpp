@@ -39,14 +39,18 @@ static const CANConfig canConfig1000 =
 };
 
 
-const CANConfig& GetCanConfig(uint8_t mode) {
-    mode &= 0x03;
-    switch (mode) {
-        case 0:
+const CANConfig& GetCanConfig(CanBaudRate baudRate) {
+    switch (baudRate) {
+        case CanBaudRate::Baud500Kbps:
             return canConfig500;
-        case 1:
+        case CanBaudRate::Baud1Mbps:
             return canConfig1000;
+        case CanBaudRate::Baud125Kbps:
+            return canConfig125;
+        case CanBaudRate::Baud250Kbps:
+            return canConfig250;
     }
+    
     // default to 500kbps
     return canConfig500;
 }

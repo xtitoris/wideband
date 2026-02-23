@@ -229,7 +229,7 @@ void InitCan()
 {
     configuration = GetConfiguration();
 
-    canStart(&CAND1, &GetCanConfig(configuration->CanMode));
+    canStart(&CAND1, &GetCanConfig(configuration->BaudRate));
     chThdCreateStatic(waCanTxThread, sizeof(waCanTxThread), NORMALPRIO, CanTxThread, nullptr);
     chThdCreateStatic(waCanRxThread, sizeof(waCanRxThread), NORMALPRIO - 4, CanRxThread, nullptr);
 }

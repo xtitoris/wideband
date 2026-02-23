@@ -3,7 +3,8 @@
 #if WB_PROD
 
 #include "hal.h"
+#include "../can_base.h"
 
-const CANConfig& GetCanConfig(uint8_t mode);
+const CANConfig& GetCanConfig(CanBaudRate baudRate);
 
 #endif // WB_PROD
