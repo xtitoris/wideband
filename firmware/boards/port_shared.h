@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../can_base.h"
+
 #if WB_PROD
 
 #include "hal.h"
-#include "../can_base.h"
 
 const CANConfig& GetCanConfig(CanBaudRate baudRate);
 
