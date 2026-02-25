@@ -132,6 +132,8 @@ void SendEmtronAfrFormat(Configuration* configuration, uint8_t ch)
         case wbo::Status::SensorUnderheat:
             frame->Status = emtron::AfrStatus::HeaterUnderTemperature;
             break;
+        default:
+            break;
     }
 
     // TODO: Detect actual faults
