@@ -9,6 +9,10 @@
 #include "timer.h"
 #include "fixed_point.h"
 
+namespace wbo {
+enum class Status : uint8_t;
+}
+
 enum class HeaterState
 {
     Preheat,
@@ -52,17 +56,20 @@ public:
 
     bool GetIsHeatingEnabled(HeaterAllow heaterAllowState, float batteryVoltage);
 
-    HeaterState GetNextState(HeaterState currentState, HeaterAllow haeterAllowState, float batteryVoltage, float sensorTemp);
+    HeaterState GetNextState(HeaterState currentState, HeaterAllow heaterAllowState, float batteryVoltage, float sensorTemp);
     float GetVoltageForState(HeaterState state, float sensorEsr);
 
 private:
+    HeaterState changeState(HeaterState newState, wbo::Status status);
+    HeaterState stopWithRetry(wbo::Status status, int retryTimeSec);
+
     Pid m_pid;
 
     float rampVoltage = 0;
     float heaterVoltage = 0;
-    HeaterState heaterState = HeaterState::Preheat;
+    HeaterState heaterState = HeaterState::Stopped;
 #ifdef HEATER_MAX_DUTY
-    int cycle;
+    int cycle = 0;
 #endif
 
     float m_targetEsr = 0;
@@ -72,11 +79,12 @@ private:
 
     int m_retryTime = 0;
 
+    // Main timer for tracking how long we've been in the current state, used for time-based transitions
+    Timer m_stateTimer;
+    
+    // Additional timers
     Timer m_heaterStableTimer;
-    Timer m_preheatTimer;
-    Timer m_warmupTimer;
-    Timer m_closedLoopStableTimer;
-    Timer m_retryTimer;
+    Timer m_undervoltTimer;
 
     // Stores the time since a non-over/underheat condition
     // If the timer reaches a threshold, an over/underheat has

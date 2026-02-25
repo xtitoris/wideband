@@ -54,6 +54,9 @@ enum class Status : uint8_t
     SensorDidntHeat = 3,
     SensorOverheat = 4,
     SensorUnderheat = 5,
+
+    SensorOvervoltage = 6,
+    SensorUndervoltage = 7,
 };
 
 static inline bool isStatusError(Status s) {
@@ -98,9 +101,13 @@ static inline const char* describeStatus(Status status) {
             return "Sensor overheat";
         case Status::SensorUnderheat:
             return "Sensor underheat";
+        case Status::SensorOvervoltage:
+            return "Sensor overvoltage";
+        case Status::SensorUndervoltage:
+            return "Sensor undervoltage";
+        default:
+            return "Unknown";
     }
-
-    return "Unknown";
 }
 
 } // namespace wbo
