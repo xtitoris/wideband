@@ -20,6 +20,10 @@
 	#define BT_BROADCAST_NAME		"RusEFI WBO"
 #endif
 
+#ifndef BT_SERIAL_PORT
+	#define BT_SERIAL_PORT			SD1
+#endif
+
 // JDY-33 has 9: 128000 which we do not
 static const unsigned int baudRates[] = 	{	115200, 9600, 	38400,	2400,	4800,	19200,	57600 };
 static const unsigned int baudRateCodes[] = {8,		4,		6,		2,		3,		5,		7 };
@@ -93,7 +97,7 @@ int SerialTsChannel::reStart() {
 	/* Stop first */
 	sdStop(m_driver);
 
-	if (BT_SERIAL_OVER_JDY33) {
+	if (BT_SERIAL_OVER_JDY33 && (m_driver == &BT_SERIAL_PORT)) {
 		/* try BT setup */
 		int retry = 3;
 		bool done = false;

@@ -91,6 +91,7 @@
 // enable BT module setup attempt
 #define BT_SERIAL_OVER_JDY33	TRUE
 #define BT_BROADCAST_NAME		"RusEFI WBO x2"
+#define BT_SERIAL_PORT			SD3
 
 // *******************************
 //   Indication: per channel status LED + communication LED
