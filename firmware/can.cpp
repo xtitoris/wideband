@@ -1,74 +1,199 @@
+#include "ch.h"
 #include "hal.h"
 
 #include "can.h"
 
 #include "status.h"
 #include "can_helper.h"
-#include "can_aemnet.h"
-#include "heater_control.h"
-#include "lambda_conversion.h"
-#include "sampling.h"
-#include "pump_dac.h"
+#include "can/base_protocol_handler.h"
+#include "can/can_rusefi.h"
+#include "can/can_aemnet.h"
+#include "can/can_ecumaster.h"
+#include "can/can_haltech.h"
+#include "can/can_link.h"
+#include "can/can_emtron.h"
+#include "can/can_motec.h"
+#include "can/can_msiobox.h"
+
 #include "port.h"
-#include "pump_control.h"
 
-#include <rusefi/math.h>
+#include <cstddef>
 
-// this same header is imported by rusEFI to get struct layouts and firmware version
-#include "../for_rusefi/wideband_can.h"
 
 static Configuration* configuration;
+
+static struct CanStatusData canStatusData = {
+    .heaterAllow = HeaterAllow::Unknown,
+    .remoteBatteryVoltage = 0.0f,
+};
+
+
+__attribute__((weak)) void SendCanData(uint16_t elapsedMs)
+{
+    #if (AFR_CHANNELS > 0)
+    // f0 memory is tight, so we keep this as an array of timers
+    // otherwise padding eats up more ram
+    static uint16_t elapsedSinceAfrTxMs[AFR_CHANNELS * 2] = {0};
+
+    for (size_t i = 0; i < AFR_CHANNELS; i++) {
+        DispatchProtocolHandler(rusefiAfrTxHandler, elapsedMs, elapsedSinceAfrTxMs[i], configuration, i);
+        const ProtocolHandler* extraHandler = nullptr;
+
+        switch (configuration->afr[i].ExtraCanProtocol) {
+            case CanAfrProtocol::AemNet:
+                extraHandler = &aemNetAfrTxHandler;
+                break;
+            case CanAfrProtocol::EcuMaster:
+                extraHandler = &ecuMasterAfrTxHandler;
+                break;
+            case CanAfrProtocol::Emtron:
+                extraHandler = &emtronAfrTxHandler;
+                break;
+            case CanAfrProtocol::Motec:
+                extraHandler = &motecAfrTxHandler;
+                break;
+            case CanAfrProtocol::LinkEcu:
+                extraHandler = &linkAfrTxHandler;
+                break;
+            default:
+                break;
+        }
+        if (extraHandler) {
+            DispatchProtocolHandler(*extraHandler, elapsedMs, elapsedSinceAfrTxMs[i + AFR_CHANNELS], configuration, i);
+        }
+    }
+
+    // Handle Haltech separately since it sends both AFR channels in the same message
+    if (configuration->afr[0].ExtraCanProtocol == CanAfrProtocol::Haltech
+        || configuration->afr[1].ExtraCanProtocol == CanAfrProtocol::Haltech) {
+        DispatchProtocolHandler(haltechAfrTxHandler, elapsedMs, elapsedSinceAfrTxMs[0], configuration);
+    }
+
+    #endif
+
+    #if (EGT_CHANNELS > 0)
+
+    static uint16_t elapsedSinceEgtTxMs = 0;
+    const ProtocolHandler* egtHandler = nullptr;
+    switch (configuration->egt[0].ExtraCanProtocol) {
+        case CanEgtProtocol::AemNet0305:
+            egtHandler = &aemNet0305EgtTxHandler;
+            break;
+        case CanEgtProtocol::AemNet2224:
+            egtHandler = &aemNet2224EgtTxHandler;
+            break;
+        case CanEgtProtocol::EcuMasterClassic:
+            egtHandler = &ecuMasterClassicEgtTxHandler;
+            break;
+        case CanEgtProtocol::EcuMasterBlack:
+            egtHandler = &ecuMasterBlackEgtTxHandler;
+            break;
+        case CanEgtProtocol::Haltech:
+            egtHandler = &haltechEgtTxHandler;
+            break;
+        case CanEgtProtocol::LinkEcu:
+            egtHandler = &linkEgtTxHandler;
+            break;
+        case CanEgtProtocol::Emtron:
+            egtHandler = &emtronEgtTxHandler;
+            break;
+        default:
+            break;
+    }
+    if (egtHandler) {
+        DispatchProtocolHandler(*egtHandler, elapsedMs, elapsedSinceEgtTxMs, configuration);
+    }
+
+    #endif
+
+    #if (IO_EXPANDER_ENABLED > 0)
+
+    static uint16_t elapsedSinceIoExpanderTxMs = 0;
+    const ProtocolHandler* ioExpanderHandler = nullptr;
+    if (configuration->ioExpanderConfig.TxEnabled) {
+        switch (configuration->ioExpanderConfig.Protocol) {
+            case CanIoProtocol::EcuMaster:
+                ioExpanderHandler = &ecuMasterSwitchBoardTxHandler;
+                break;
+            case CanIoProtocol::Haltech:
+                ioExpanderHandler = &haltechIoTxHandler;
+                break;
+            case CanIoProtocol::Emtron:
+                ioExpanderHandler = &emtronIoTxHandler;
+                break;
+            case CanIoProtocol::MsIoBox:
+                ioExpanderHandler = &msIoBoxTxHandler;
+                break;
+            default:
+                break;
+        }
+        if (ioExpanderHandler) {
+            DispatchProtocolHandler(*ioExpanderHandler, elapsedMs, elapsedSinceIoExpanderTxMs, configuration);
+        }
+    } 
+
+    #endif
+
+    // E888 combines EGT and IO expander data, so handle it separately
+    #if (MOTEC_E888_ENABLED > 0)
+        static uint16_t elapsedSinceMotecE888TxMs = 0;
+        if (IsMotecE888Enabled(configuration)) {
+            DispatchProtocolHandler(motecE888TxHandler, elapsedMs, elapsedSinceMotecE888TxMs, configuration);
+        }
+    #endif
+}
+
+__attribute__((weak)) void ProcessCanMessage(const CANRxFrame* frame)
+{
+    ProcessRusefiCanMessage(frame, configuration, &canStatusData);
+
+    //ProcessLinkCanMessage(frame, configuration, &canStatusData);
+
+    #if IO_EXPANDER_ENABLED > 0
+    if (configuration->ioExpanderConfig.RxEnabled) {
+        switch (configuration->ioExpanderConfig.Protocol) {
+            case CanIoProtocol::Haltech:
+                ProcessHaltechIO12Message(frame, configuration);
+                break;
+            case CanIoProtocol::EcuMaster:
+                HandleEcuMasterCanMessage(frame, configuration);
+                break;
+            case CanIoProtocol::Motec:
+                // TODO: Implement Motec E888 RX message processing
+                break;
+            default:
+                break;
+        }
+    }
+
+    // IOBox needs to config packages to know if it should send data
+    // We handle disabling output control in the handler instead of here
+    if (configuration->ioExpanderConfig.Protocol == CanIoProtocol::MsIoBox) {
+        ProcessMsIoBoxCanMessage(frame, configuration);
+    }
+
+    #endif
+}
 
 static THD_WORKING_AREA(waCanTxThread, 512);
 void CanTxThread(void*)
 {
-    int cycle;
     chRegSetThreadName("CAN Tx");
 
     // Current system time.
     systime_t prev = chVTGetSystemTime();
+    uint32_t prevMs = TIME_I2MS(prev);
 
     while(1)
     {
-        // AFR - 100 Hz
-        for (int ch = 0; ch < AFR_CHANNELS; ch++)
-        {
-            SendCanForChannel(ch);
-        }
+        uint32_t nowMs = TIME_I2MS(chVTGetSystemTime());
+        uint32_t elapsedMs = nowMs - prevMs;
+        prevMs = nowMs;
+        SendCanData(elapsedMs);
 
-        // EGT - 20 Hz
-        if ((cycle % 5) == 0) {
-            for (int ch = 0; ch < EGT_CHANNELS; ch++) {
-                SendCanEgtForChannel(ch);
-            }
-        }
-
-        cycle++;
         prev = chThdSleepUntilWindowed(prev, chTimeAddX(prev, TIME_MS2I(WBO_TX_PERIOD_MS)));
     }
 }
-
-static void SendAck()
-{
-    CANTxFrame frame;
-
-#ifdef STM32G4XX
-    frame.common.RTR = 0;
-#else // Not CAN FD
-    frame.RTR = CAN_RTR_DATA;
-#endif
-
-    CAN_EXT(frame) = 1;
-    CAN_EID(frame) = WB_ACK;
-    frame.DLC = 0;
-
-    canTransmitTimeout(&CAND1, CAN_ANY_MAILBOX, &frame, TIME_INFINITE);
-}
-
-// Start in Unknown state. If no CAN message is ever received, we operate
-// on internal battery sense etc.
-static HeaterAllow heaterAllow = HeaterAllow::Unknown;
-static float remoteBatteryVoltage = 0;
 
 static THD_WORKING_AREA(waCanRxThread, 512);
 void CanRxThread(void*)
@@ -86,156 +211,25 @@ void CanRxThread(void*)
             continue;
         }
 
-        // Ignore std frames, only listen to ext
-        if (!CAN_EXT(frame))
-        {
-            continue;
-        }
-
-        // Ignore not ours frames
-        if (WB_MSG_GET_HEADER(CAN_ID(frame)) != WB_BL_HEADER)
-        {
-            continue;
-        }
-
-        if (frame.DLC >= 2 && CAN_ID(frame) == WB_MSG_ECU_STATUS)
-        {
-            // This is status from ECU
-            // - battery voltage
-            // - heater enable signal
-            // - optionally pump control gain
-
-            // data1 contains heater enable bit
-            if ((frame.data8[1] & 0x1) == 0x1)
-            {
-                heaterAllow = HeaterAllow::Allowed;
-            }
-            else
-            {
-                heaterAllow = HeaterAllow::NotAllowed;
-            }
-
-            // data0 contains battery voltage in tenths of a volt
-            float vbatt = frame.data8[0] * 0.1f;
-            if (vbatt < 5)
-            {
-                // provided vbatt is bogus, default to 14v nominal
-                remoteBatteryVoltage = 14;
-            }
-            else
-            {
-                remoteBatteryVoltage = vbatt;
-            }
-
-            if (frame.DLC >= 3) {
-                // data2 contains pump controller gain in percent (0-200)
-                float pumpGain = frame.data8[2] * 0.01f;
-                SetPumpGainAdjust(clampF(0, pumpGain, 1));
-            }
-        }
-        // If it's a bootloader entry request, reboot to the bootloader!
-        else if ((frame.DLC == 0 || frame.DLC == 1) && CAN_ID(frame) == WB_BL_ENTER)
-        {
-            // If 0xFF (force update all) or our ID, reset to bootloader, otherwise ignore
-            if (frame.DLC == 0 || frame.data8[0] == 0xFF || frame.data8[0] == GetConfiguration()->afr[0].RusEfiIdx)
-            {
-                SendAck();
-
-                // Let the message get out before we reset the chip
-                chThdSleep(50);
-
-                NVIC_SystemReset();
-            }
-        }
-        // Check if it's an "index set" message
-        else if (frame.DLC == 1 && CAN_ID(frame) == WB_MSG_SET_INDEX)
-        {
-            int offset = frame.data8[0];
-            configuration = GetConfiguration();
-            for (int i = 0; i < AFR_CHANNELS; i++) {
-                configuration->afr[i].RusEfiIdx = offset + i;
-            }
-            for (int i = 0; i < EGT_CHANNELS; i++) {
-                configuration->egt[i].RusEfiIdx = offset + i;
-            }
-            SetConfiguration();
-            SendAck();
-        }
+        ProcessCanMessage(&frame);
     }
 }
 
 HeaterAllow GetHeaterAllowed()
 {
-    return heaterAllow;
+    return canStatusData.heaterAllow;
 }
 
 float GetRemoteBatteryVoltage()
 {
-    return remoteBatteryVoltage;
+    return canStatusData.remoteBatteryVoltage;
 }
 
 void InitCan()
 {
     configuration = GetConfiguration();
 
-    canStart(&CAND1, &GetCanConfig());
+    canStart(&CAND1, &GetCanConfig(configuration->BaudRate));
     chThdCreateStatic(waCanTxThread, sizeof(waCanTxThread), NORMALPRIO, CanTxThread, nullptr);
     chThdCreateStatic(waCanRxThread, sizeof(waCanRxThread), NORMALPRIO - 4, CanRxThread, nullptr);
-}
-
-void SendRusefiFormat(uint8_t ch)
-{
-    auto baseAddress = WB_DATA_BASE_ADDR + 2 * configuration->afr[ch].RusEfiIdx;
-
-    const auto& sampler = GetSampler(ch);
-    const auto& heater = GetHeaterController(ch);
-
-    auto nernstDc = sampler.GetNernstDc();
-    auto pumpDuty = GetPumpOutputDuty(ch);
-    auto lambda = GetLambda(ch);
-
-    // Lambda is valid if:
-    // 1. Nernst voltage is near target
-    // 2. Lambda is >0.6 (sensor isn't specified below that)
-    bool lambdaValid =
-            nernstDc > (NERNST_TARGET - 0.1f) && nernstDc < (NERNST_TARGET + 0.1f) &&
-            lambda > 0.6f;
-
-    if (configuration->afr[ch].RusEfiTx) {
-        CanTxTyped<wbo::StandardData> frame(baseAddress + 0);
-
-        // The same header is imported by the ECU and checked against this data in the frame
-        frame.get().Version = RUSEFI_WIDEBAND_VERSION;
-
-        uint16_t lambdaInt = lambdaValid ? (lambda * 10000) : 0;
-        frame.get().Lambda = lambdaInt;
-        frame.get().TemperatureC = sampler.GetSensorTemperature();
-        bool heaterClosedLoop = heater.IsRunningClosedLoop();
-        frame.get().Valid = (heaterClosedLoop && lambdaValid) ? 0x01 : 0x00;
-    }
-
-    if (configuration->afr[ch].RusEfiTxDiag) {
-        CanTxTyped<wbo::DiagData> frame(baseAddress + 1);;
-
-        frame.get().Esr = sampler.GetSensorInternalResistance();
-        frame.get().NernstDc = nernstDc * 1000;
-        frame.get().PumpDuty = pumpDuty * 255;
-        frame.get().status = GetCurrentStatus(ch);
-        frame.get().HeaterDuty = GetHeaterDuty(ch) * 255;
-    }
-}
-
-// Weak link so boards can override it
-__attribute__((weak)) void SendCanForChannel(uint8_t ch)
-{
-    SendRusefiFormat(ch);
-    SendAemNetUEGOFormat(configuration, ch);
-}
-
-__attribute__((weak)) void SendCanEgtForChannel(uint8_t ch)
-{
-#if (EGT_CHANNELS > 0)
-    // TODO: implement RusEFI protocol?
-    SendAemNetEGTFormat(configuration, ch);
-#endif
 }

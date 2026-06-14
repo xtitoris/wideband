@@ -150,7 +150,14 @@ CPPSRC = $(ALLCPPSRC) \
           shared/flash.cpp \
           can.cpp \
           can_helper.cpp \
-          can_aemnet.cpp \
+          can/can_aemnet.cpp \
+          can/can_ecumaster.cpp \
+          can/can_emtron.cpp \
+          can/can_haltech.cpp \
+          can/can_link.cpp \
+          can/can_motec.cpp \
+          can/can_rusefi.cpp \
+          can/can_msiobox.cpp \
           status.cpp \
           lambda_conversion.cpp \
           pwm.cpp \
@@ -160,6 +167,7 @@ CPPSRC = $(ALLCPPSRC) \
           max3185x.cpp \
           uart.cpp \
           auxout.cpp \
+          pwmout.cpp \
           indication.cpp \
           sampling_thread.cpp \
           heater_thread.cpp \

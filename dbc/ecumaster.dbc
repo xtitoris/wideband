@@ -1,0 +1,183 @@
+VERSION ""
+
+
+NS_ :
+    NS_DESC_
+    CM_
+    BA_DEF_
+    BA_
+    VAL_
+    CAT_DEF_
+    CAT_
+    FILTER
+    BA_DEF_DEF_
+    EV_DATA_
+    ENVVAR_DATA_
+    SGTYPE_
+    SGTYPE_VAL_
+    BA_DEF_SGTYPE_
+    BA_SGTYPE_
+    SIG_TYPE_REF_
+    VAL_TABLE_
+    SIG_GROUP_
+    SIG_VALTYPE_
+    SIGTYPE_VALTYPE_
+    BO_TX_BU_
+    BA_DEF_REL_
+    BA_REL_
+    BA_DEF_DEF_REL_
+    BU_SG_REL_
+    BU_EV_REL_
+    BU_BO_REL_
+    SG_MUL_VAL_
+
+BS_: 
+BU_: ECUMaster_L2C ECUMaster_EGT ECUMaster_Switchboard ECU 
+BO_ 1636 EcuMaster_AfrData1: 8 ECUMaster_L2C
+   SG_ SystemVolts : 7|16@0+ (0.01,0) [0|655.35] "V" ECU
+   SG_ HeaterPower : 23|8@0+ (0.392157,0) [0|100] "%" ECU
+   SG_ SensorTemp : 31|8@0+ (4,0) [0|1020] "degC" ECU
+   SG_ Lambda : 39|16@0+ (0.001,0) [0|65.535] "lambda" ECU
+   SG_ VmShortVcc : 48|1@0+ (1,0) [0|1] "" ECU
+   SG_ VmShortGnd : 49|1@0+ (1,0) [0|1] "" ECU
+   SG_ UnShortVcc : 50|1@0+ (1,0) [0|1] "" ECU
+   SG_ UnShortGnd : 51|1@0+ (1,0) [0|1] "" ECU
+   SG_ IaIpShortVcc : 52|1@0+ (1,0) [0|1] "" ECU
+   SG_ IaIpShortGnd : 53|1@0+ (1,0) [0|1] "" ECU
+   SG_ VubLowVoltage : 54|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterShortVcc : 55|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterShortGnd : 56|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterOpenLoad : 57|1@0+ (1,0) [0|1] "" ECU
+   SG_ CalibrationState : 60|3@0+ (1,0) [0|3] "" ECU
+   SG_ DeviceVersion : 63|3@0+ (1,0) [0|7] "" ECU
+
+BO_ 1637 EcuMaster_AfrData2: 8 ECUMaster_L2C
+   SG_ IpCurrent : 7|16@0- (0.001,0) [-32.768|32.767] "mA" ECU
+   SG_ OxygenConcentration : 23|16@0- (0.01,0) [-327.68|327.67] "%" ECU
+   SG_ Ri : 39|16@0+ (0.1,0) [0|6553.5] "Ohm" ECU
+
+BO_ 1638 EcuMaster_AfrData1: 8 ECUMaster_L2C
+   SG_ SystemVolts : 7|16@0+ (0.01,0) [0|655.35] "V" ECU
+   SG_ HeaterPower : 23|8@0+ (0.392157,0) [0|100] "%" ECU
+   SG_ SensorTemp : 31|8@0+ (4,0) [0|1020] "degC" ECU
+   SG_ Lambda : 39|16@0+ (0.001,0) [0|65.535] "lambda" ECU
+   SG_ VmShortVcc : 48|1@0+ (1,0) [0|1] "" ECU
+   SG_ VmShortGnd : 49|1@0+ (1,0) [0|1] "" ECU
+   SG_ UnShortVcc : 50|1@0+ (1,0) [0|1] "" ECU
+   SG_ UnShortGnd : 51|1@0+ (1,0) [0|1] "" ECU
+   SG_ IaIpShortVcc : 52|1@0+ (1,0) [0|1] "" ECU
+   SG_ IaIpShortGnd : 53|1@0+ (1,0) [0|1] "" ECU
+   SG_ VubLowVoltage : 54|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterShortVcc : 55|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterShortGnd : 56|1@0+ (1,0) [0|1] "" ECU
+   SG_ HeaterOpenLoad : 57|1@0+ (1,0) [0|1] "" ECU
+   SG_ CalibrationState : 60|3@0+ (1,0) [0|3] "" ECU
+   SG_ DeviceVersion : 63|3@0+ (1,0) [0|7] "" ECU
+
+BO_ 1639 EcuMaster_AfrData2: 8 ECUMaster_L2C
+   SG_ IpCurrent : 7|16@0- (0.001,0) [-32.768|32.767] "mA" ECU
+   SG_ OxygenConcentration : 23|16@0- (0.01,0) [-327.68|327.67] "%" ECU
+   SG_ Ri : 39|16@0+ (0.1,0) [0|6553.5] "Ohm" ECU
+
+BO_ 1552 EcuMaster_Classic_EGT: 8 ECUMaster_EGT
+   SG_ Egt1 : 7|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt2 : 23|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt3 : 39|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt4 : 55|16@0- (1,0) [-32768|32767] "degC" ECU
+
+BO_ 1632 EcuMaster_Black_EGT: 8 ECUMaster_EGT
+   SG_ Egt1 : 7|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt2 : 23|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt3 : 39|16@0- (1,0) [-32768|32767] "degC" ECU
+   SG_ Egt4 : 55|16@0- (1,0) [-32768|32767] "degC" ECU
+
+BO_ 1600 EcuMaster_Switchboard_AV1_4: 8 ECUMaster_Switchboard
+   SG_ AV1 : 0|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV2 : 16|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV3 : 32|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV4 : 48|16@1+ (0.001,0) [0|65.535] "V" ECU
+
+BO_ 1601 EcuMaster_Switchboard_AV5_8: 8 ECUMaster_Switchboard
+   SG_ AV5 : 0|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV6 : 16|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV7 : 32|16@1+ (0.001,0) [0|65.535] "V" ECU
+   SG_ AV8 : 48|16@1+ (0.001,0) [0|65.535] "V" ECU
+
+BO_ 1602 EcuMaster_Switchboard_Other: 8 ECUMaster_Switchboard
+   SG_ Rotary1 : 0|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary2 : 4|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary3 : 8|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary4 : 12|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary5 : 16|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary6 : 20|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary7 : 24|4@1+ (1,0) [0|15] "" ECU
+   SG_ Rotary8 : 28|4@1+ (1,0) [0|15] "" ECU
+   SG_ Switch : 32|8@1+ (1,0) [0|255] "" ECU
+   SG_ AnalogState : 40|8@1+ (1,0) [0|255] "" ECU
+   SG_ LowSideState : 48|8@1+ (1,0) [0|255] "" ECU
+   SG_ Heartbeat : 56|8@1+ (1,0) [0|255] "" ECU
+
+BO_ 1603 EcuMaster_Switchboard_LowSide_Rx: 8 ECU
+   SG_ LowSide1_State : 0|8@1+ (1,0) [0|255] "" ECUMaster_Switchboard
+   SG_ LowSide2_State : 8|8@1+ (1,0) [0|255] "" ECUMaster_Switchboard
+   SG_ LowSide3_State : 16|8@1+ (1,0) [0|255] "" ECUMaster_Switchboard
+   SG_ LowSide4_State : 24|8@1+ (1,0) [0|255] "" ECUMaster_Switchboard
+
+CM_ BO_ 1636 "EcuMaster AFR Data 1. Base ID 0x664 (1636), 1 Mbps, 10 ms period";
+CM_ SG_ 1636 HeaterPower "0-100%, scaling: 100/255";
+CM_ SG_ 1636 SensorTemp "Sensor temperature in degC, scaling: 4:1";
+CM_ SG_ 1636 CalibrationState "0=Start, 1=WaitForSPIReset, 2=Finished, 3=Error";
+CM_ SG_ 1636 DeviceVersion "0=LSU42, 1=LSU49, 2=LSUADV";
+CM_ BO_ 1637 "EcuMaster AFR Data 2. Base ID + 1 = 0x665 (1637)";
+CM_ SG_ 1637 IpCurrent "Pump current in mA";
+CM_ SG_ 1637 OxygenConcentration "Oxygen concentration in %";
+CM_ SG_ 1637 Ri "Sensor internal resistance in Ohms";
+CM_ BO_ 1638 "EcuMaster AFR Data 1. Base ID 0x664 (1636), 1 Mbps, 10 ms period";
+CM_ SG_ 1638 HeaterPower "0-100%, scaling: 100/255";
+CM_ SG_ 1638 SensorTemp "Sensor temperature in degC, scaling: 4:1";
+CM_ SG_ 1638 CalibrationState "0=Start, 1=WaitForSPIReset, 2=Finished, 3=Error";
+CM_ SG_ 1638 DeviceVersion "0=LSU42, 1=LSU49, 2=LSUADV";
+CM_ BO_ 1639 "EcuMaster AFR Data 2. Base ID + 1 = 0x665 (1637)";
+CM_ SG_ 1639 IpCurrent "Pump current in mA";
+CM_ SG_ 1639 OxygenConcentration "Oxygen concentration in %";
+CM_ SG_ 1639 Ri "Sensor internal resistance in Ohms";
+CM_ BO_ 1552 "EcuMaster Classic EGT. Base ID 0x610 (1552), supports up to 4 EGT channels";
+CM_ BO_ 1632 "EcuMaster Black EGT. Base ID 0x660 (1632), supports up to 4 EGT channels";
+CM_ BO_ 1600 "EcuMaster Switchboard Analog Voltages 1-4. Base ID 0x640 (1600), 100 ms period";
+CM_ SG_ 1600 AV1 "Analog Voltage input 1";
+CM_ SG_ 1600 AV2 "Analog Voltage input 2";
+CM_ SG_ 1600 AV3 "Analog Voltage input 3";
+CM_ SG_ 1600 AV4 "Analog Voltage input 4";
+CM_ BO_ 1601 "EcuMaster Switchboard Analog Voltages 5-8. Base ID + 1 = 0x641 (1601)";
+CM_ SG_ 1601 AV5 "Analog Voltage input 5";
+CM_ SG_ 1601 AV6 "Analog Voltage input 6";
+CM_ SG_ 1601 AV7 "Analog Voltage input 7";
+CM_ SG_ 1601 AV8 "Analog Voltage input 8";
+CM_ BO_ 1602 "EcuMaster Switchboard Other Data. Base ID + 2 = 0x642 (1602)";
+CM_ SG_ 1602 Rotary1 "Rotary switch 1 position (0-15)";
+CM_ SG_ 1602 Rotary2 "Rotary switch 2 position (0-15)";
+CM_ SG_ 1602 Rotary3 "Rotary switch 3 position (0-15)";
+CM_ SG_ 1602 Rotary4 "Rotary switch 4 position (0-15)";
+CM_ SG_ 1602 Rotary5 "Rotary switch 5 position (0-15)";
+CM_ SG_ 1602 Rotary6 "Rotary switch 6 position (0-15)";
+CM_ SG_ 1602 Rotary7 "Rotary switch 7 position (0-15)";
+CM_ SG_ 1602 Rotary8 "Rotary switch 8 position (0-15)";
+CM_ SG_ 1602 Switch "Switch state bitmask: bits 0-7 represent switches 1-8 (0=open, 1=closed)";
+CM_ SG_ 1602 AnalogState "Analog input threshold state bitmask (1=above threshold, 0=below threshold)";
+CM_ SG_ 1602 LowSideState "Low-side output state bitmask (1=active, 0=inactive)";
+CM_ SG_ 1602 Heartbeat "Heartbeat counter, incremented on each message";
+CM_ BO_ 1603 "EcuMaster Switchboard Low-Side Control. Base ID + 3 = 0x643 (1603), ECU to Switchboard";
+CM_ SG_ 1603 LowSide1_State "Low-side output 1 control (0=inactive, non-zero=active)";
+CM_ SG_ 1603 LowSide2_State "Low-side output 2 control (0=inactive, non-zero=active)";
+CM_ SG_ 1603 LowSide3_State "Low-side output 3 control (0=inactive, non-zero=active)";
+CM_ SG_ 1603 LowSide4_State "Low-side output 4 control (0=inactive, non-zero=active)";
+BA_DEF_ "BusType" STRING ;
+BA_DEF_ BO_ "GenMsgBackgroundColor" STRING ;
+BA_DEF_ BO_ "GenMsgForegroundColor" STRING ;
+BA_DEF_DEF_ "BusType" "CAN";
+BA_DEF_DEF_ "GenMsgBackgroundColor" "#ffffff";
+BA_DEF_DEF_ "GenMsgForegroundColor" "#000000";
+VAL_ 1636 CalibrationState 0 "Start" 1 "WaitForSPIReset" 2 "Finished" 3 "Error";
+VAL_ 1636 DeviceVersion 0 "LSU42" 1 "LSU49" 2 "LSUADV";
+VAL_ 1638 CalibrationState 0 "Start" 1 "WaitForSPIReset" 2 "Finished" 3 "Error";
+VAL_ 1638 DeviceVersion 0 "LSU42" 1 "LSU49" 2 "LSUADV";

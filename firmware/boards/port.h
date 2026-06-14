@@ -21,6 +21,11 @@ struct AnalogChannelResult
 struct AnalogResult
 {
     AnalogChannelResult ch[AFR_CHANNELS];
+
+    #if AUX_INPUT_CHANNELS > 0
+    float AuxInputVoltage[AUX_INPUT_CHANNELS];
+    #endif
+
     float VirtualGroundVoltageInt;
 
     #ifdef BOARD_HAS_VOLTAGE_SENSE
@@ -41,6 +46,11 @@ enum class SensorType : uint8_t {
     LSUADV = 2,
 };
 
+struct CanStatusData{
+    HeaterAllow heaterAllow;
+    float remoteBatteryVoltage;
+};
+
 #ifndef BOARD_DEFAULT_SENSOR_TYPE
 #define BOARD_DEFAULT_SENSOR_TYPE SensorType::LSU49
 #endif
@@ -52,13 +62,15 @@ enum class AuxOutputMode : uint8_t {
     Lambda1 = 3,
     Egt0 = 4,
     Egt1 = 5,
+    IOExpander = 6,
 };
+
 
 class Configuration {
 private:
     // Increment this any time the configuration format changes
     // It is stored along with the data to ensure that it has been written before
-    static constexpr uint32_t ExpectedTag = 0xDEADBE03;
+    static constexpr uint32_t ExpectedTag = 0xDEADBE04;
     uint32_t Tag = ExpectedTag;
 
 public:
@@ -75,6 +87,7 @@ public:
         *this = {};
 
         NoLongerUsed0 = 0;
+        BaudRate = CanBaudRate::Baud500Kbps;
         sensorType = BOARD_DEFAULT_SENSOR_TYPE;
 
         /* default auxout curve is 0..5V for AFR 8.5 to 18.0
@@ -92,9 +105,9 @@ public:
             afr[i].RusEfiTxDiag = true;
             afr[i].RusEfiIdx = i;
 
-            // Disable AemNet
-            afr[i].AemNetTx = false;
-            afr[i].AemNetIdOffset = i;
+            // No extra protocol by default
+            afr[i].ExtraCanProtocol = CanAfrProtocol::None;
+            afr[i].ExtraCanIdOffset = i;
         }
 
         for (i = 0; i < EGT_CHANNELS; i++) {
@@ -103,14 +116,22 @@ public:
             egt[i].RusEfiTxDiag = false;
             egt[i].RusEfiIdx = i;
 
-            // Enable AemNet
-            egt[i].AemNetTx = true;
-            egt[i].AemNetIdOffset = i;
+            // AemNet protocol by default
+            egt[i].ExtraCanProtocol = CanEgtProtocol::AemNet0305;
+            egt[i].ExtraCanChannelEnabled = true;
+            egt[i].ExtraCanIdOffset = i;
         }
 
         heaterConfig.HeaterSupplyOffVoltage = HEATER_SUPPLY_OFF_VOLTAGE;
         heaterConfig.HeaterSupplyOnVoltage = HEATER_SUPPLY_ON_VOLTAGE;
         heaterConfig.PreheatTimeSec = HEATER_PREHEAT_TIME;
+
+        ioExpanderConfig.Protocol = CanIoProtocol::None;
+        ioExpanderConfig.TxEnabled = false;
+        ioExpanderConfig.RxEnabled = false;
+        ioExpanderConfig.Offset = 0;
+        ioExpanderConfig.IOInputsEnabled = 0xFFFF;  // All inputs enabled by default
+        ioExpanderConfig.IOOutputsEnabled = 0xFFFF; // All outputs enabled by default
         
         /* Finaly */
         Tag = ExpectedTag;
@@ -119,7 +140,8 @@ public:
     // Actual configuration data
     union {
         struct {
-            uint8_t NoLongerUsed0 = 0;
+            uint8_t NoLongerUsed0 : 6 = 0;
+            CanBaudRate BaudRate : 2;
             // AUX0 and AUX1 curves
             float auxOutBins[2][8];
             float auxOutValues[2][8];
@@ -131,25 +153,38 @@ public:
             struct {
                 bool RusEfiTx:1;
                 bool RusEfiTxDiag:1;
-                bool AemNetTx:1;
+                CanAfrProtocol ExtraCanProtocol:4;
 
                 uint8_t RusEfiIdx;
-                uint8_t AemNetIdOffset;
-                uint8_t pad[5];
+                uint8_t ExtraCanIdOffset;
+                uint8_t Reserved[5];
             } afr[2];
 
             // per EGT channel settings
             struct {
                 bool RusEfiTx:1;
                 bool RusEfiTxDiag:1;
-                bool AemNetTx:1;
+                CanEgtProtocol ExtraCanProtocol:5;
+                bool ExtraCanChannelEnabled:1; // Is the channel actually enabled in the selected protocol
 
                 uint8_t RusEfiIdx;
-                uint8_t AemNetIdOffset;
-                uint8_t pad[5];
+                uint8_t ExtraCanIdOffset;
+                uint8_t Reserved[5];
             } egt[2];
 
             struct HeaterConfig heaterConfig;
+
+            struct {
+                CanIoProtocol Protocol: 5;
+                uint8_t Reserved0: 1;
+                uint8_t TxEnabled: 1;
+                uint8_t RxEnabled: 1;
+                uint8_t Offset;
+                uint16_t IOInputsEnabled;  // Bitmask of which inputs should be reported in CAN messages
+                uint16_t IOOutputsEnabled; // Bitmask of which outputs should be controlled via CAN messages
+                uint8_t Reserved1[10];
+            } ioExpanderConfig;
+
         } __attribute__((packed));
 
         // pad to 256 bytes including tag
