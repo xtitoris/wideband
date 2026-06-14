@@ -55,20 +55,36 @@ const ADCConversionGroup convGroup =
         ADC_SMPR2_SMP_AN9(ADC_SAMPLE),
     .sqr1 = ADC_SQR1_NUM_CH(ADC_CHANNEL_COUNT),
     .sqr2 =
-        /* TODO: move these two channels to slow ADC! */
-        ADC_SQR2_SQ7_N(15) | /* PC5 - ADC12_IN15 - L_Heater_sense */
-        ADC_SQR2_SQ8_N(8)  | /* PB0 - ADC12_IN8 - R_Heater_sense */
-        ADC_SQR2_SQ9_N(2)  | /* PA2 - ADC12_IN2 - R_Un_sense */
-        ADC_SQR2_SQ10_N(3),  /* PA3 - ADC12_IN3 - L_Un_sense */
+        ADC_SQR2_SQ7_N(1)  | /* PA1 - ADC12_IN1   - R_Un_3x_sense */
+        ADC_SQR2_SQ8_N(13) | /* PC3 - ADC123_IN13 - L_Ip_sense */
+        ADC_SQR2_SQ9_N(3)  | /* PA3 -  ADC12_IN3  - L_Un_sense */
+        ADC_SQR2_SQ10_N(12), /* PC2 - ADC123_IN12 - L_Un_3x_sense */
     .sqr3 =
-        ADC_SQR3_SQ1_N(0)  | /* PA0 - ADC12_IN0 - R_Ip_sense */
-        ADC_SQR3_SQ2_N(1)  | /* PA1 - ADC12_IN1 - R_Un_3x_sense */
-        ADC_SQR3_SQ3_N(13) | /* PC3 - ADC123_IN13 - L_Ip_sense */
-        ADC_SQR3_SQ4_N(12) | /* PC2 - ADC123_IN12 - L_Un_3x_sense */
-        /* TODO: move these two channels to slow ADC! */
-        ADC_SQR3_SQ5_N(6)  | /* PA6 - ADC12_IN6 - R_AUX_ADC */
-        ADC_SQR3_SQ6_N(7),   /* PA7 - ADC12_IN7 - L_AUX_ADC */
+        /*
+        Right at the start of acquisition there are still some transient switching noises, especially when the sensor is still cold.
+        So we put unrelated channels that are not affected by switch first, to allow them to settle before we sample the critical channels (Nernst voltage) later in the sequence.
+        Better way to do this would be to have a separate ADC sequence for the critical channels and trigger it with a timer after a delay, but this is simpler to implement for now.
+        Also, we could utilize master/slave dual ADC mode to have two independent sequences, and cut the conversion time in half
+        */        
+        ADC_SQR3_SQ1_N(8)  | /* PB0 - ADC12_IN8  - R_Heater_sense */
+        ADC_SQR3_SQ2_N(15) | /* PC5 - ADC12_IN15 - L_Heater_sense */
+        ADC_SQR3_SQ3_N(6)  | /* PA6 - ADC12_IN6  - R_AUX_ADC */
+        ADC_SQR3_SQ4_N(7)  | /* PA7 - ADC12_IN7  - L_AUX_ADC */
+        ADC_SQR3_SQ5_N(0)  | /* PA0 - ADC12_IN0  - R_Ip_sense */
+        ADC_SQR3_SQ6_N(2)  , /* PA2 - ADC12_IN2  - R_Un_sense */
 };
+
+/* Given _SQX, index is X - 1 */
+#define R_HEATER_SENSE_IDX 0
+#define L_HEATER_SENSE_IDX 1
+#define R_AUX_ADC_IDX      2
+#define L_AUX_ADC_IDX      3
+#define R_IP_SENSE_IDX     4
+#define R_UN_SENSE_IDX     5
+#define R_UN_3X_SENSE_IDX  6
+#define L_IP_SENSE_IDX     7
+#define L_UN_SENSE_IDX     8
+#define L_UN_3X_SENSE_IDX  9
 
 static float AverageSamples(adcsample_t* buffer, size_t idx)
 {
@@ -136,13 +152,13 @@ AnalogResult AnalogSampleFinish()
 
     if (l_heater && l_heater_new)
     {
-        float vbatt_raw = GetMaxSample(adcBuffer, 6) / HEATER_INPUT_DIVIDER;
+        float vbatt_raw = GetMaxSample(adcBuffer, L_HEATER_SENSE_IDX) / HEATER_INPUT_DIVIDER;
         l_heater_voltage = HEATER_FILTER_ALPHA * vbatt_raw + (1.0 - HEATER_FILTER_ALPHA) * l_heater_voltage;
     }
 
     if (r_heater && r_heater_new)
     {
-        float vbatt_raw = GetMaxSample(adcBuffer, 7) / HEATER_INPUT_DIVIDER;
+        float vbatt_raw = GetMaxSample(adcBuffer, R_HEATER_SENSE_IDX) / HEATER_INPUT_DIVIDER;
         r_heater_voltage = HEATER_FILTER_ALPHA * vbatt_raw + (1.0 - HEATER_FILTER_ALPHA) * r_heater_voltage;
     }
 
@@ -155,13 +171,13 @@ AnalogResult AnalogSampleFinish()
 
     for (int i = 0; i < AFR_CHANNELS; i++) {
         res.ch[i].NernstClamped = false;
-        float NernstRaw = AverageSamples(adcBuffer, (i == 0) ? 3 : 1);
+        float NernstRaw = AverageSamples(adcBuffer, (i == 0) ? L_UN_3X_SENSE_IDX : R_UN_3X_SENSE_IDX);
         if (!isClamped(NernstRaw)) {
             /* not clamped */
             res.ch[i].NernstVoltage = (NernstRaw - NERNST_INPUT_OFFSET) * (1.0 / NERNST_INPUT_GAIN);
         } else {
             /* Clamped, use ungained input */
-            NernstRaw = AverageSamples(adcBuffer, (i == 0) ? 9 : 8);
+            NernstRaw = AverageSamples(adcBuffer, (i == 0) ? L_UN_SENSE_IDX : R_UN_SENSE_IDX);
             if (isClamped(NernstRaw)) {
                 res.ch[i].NernstClamped = true;
             }
@@ -169,11 +185,12 @@ AnalogResult AnalogSampleFinish()
             res.ch[i].NernstVoltage = NernstRaw - HALF_VCC;
         }
     }
+
     /* left */
-    res.ch[0].PumpCurrentVoltage = AverageSamples(adcBuffer, 2);
+    res.ch[0].PumpCurrentVoltage = AverageSamples(adcBuffer, L_IP_SENSE_IDX);
     res.ch[0].HeaterSupplyVoltage = l_heater_voltage;
     /* right */
-    res.ch[1].PumpCurrentVoltage = AverageSamples(adcBuffer, 0);
+    res.ch[1].PumpCurrentVoltage = AverageSamples(adcBuffer, R_IP_SENSE_IDX);
     res.ch[1].HeaterSupplyVoltage = r_heater_voltage;
 
     return res;
